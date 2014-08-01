@@ -11,6 +11,30 @@ local function getMeCallback(event)
 	end
 end
 
+local function onLog(event)
+	if not event.error then
+		storyboard.gotoScene("mp-menu-a", "fade", 400);
+	else
+		native.showAlert("Error", "Log In Error")
+	end
+end
+
+local function onRun(event)
+	if not event.error then
+		--print ("onRun");
+		if(event.result.hasUsername == true) then
+			--print ("has username");
+			--print (myapp.email, myapp.password);
+			coronium:loginUser(myapp.email, myapp.password, onLog)
+		else
+			--print ("go to chooseusername");
+			storyboard.gotoScene("chooseusername", "fade", 400);
+		end
+	else
+		native.showAlert("Error", event.error);
+	end
+end
+
 local function playButtonEvent(event)
 	if(event.phase == "began") then
 	elseif (event.phase == "ended" or event.phase == "cancelled") then
@@ -25,10 +49,10 @@ local function playButtonEvent(event)
 			event.yStart >= minY and event.yStart <= maxY) then
 				--check if userinfo exists
 				if(myapp.hasUserInfo) then
-					coronium:loginUser(myapp.email, myapp.password)
-					storyboard.gotoScene("mp-menu-a", "fade", 400);
+					--print ("check username");
+					coronium:run("hasusername", {email = myapp.email}, onRun);
 				else
-					storyboard.gotoScene("login", "fade", 400);
+					storyboard.gotoScene("signup", "fade", 400);
 				end
 		end
 	end

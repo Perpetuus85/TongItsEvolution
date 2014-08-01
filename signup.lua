@@ -14,7 +14,7 @@ function scene:createScene(event)
 	local group = self.view;
 	
 	--TODO: Replace with logo instead of text
-	local logo = display.newText("Log In", display.contentWidth / 2, 30, myapp.font,myapp.fontSize);
+	local logo = display.newText("Sign Up", display.contentWidth / 2, 30, myapp.font,myapp.fontSize);
 	logo.x = (display.contentWidth / 2);
 	group:insert(logo);
 	
@@ -147,10 +147,57 @@ function scene:createScene(event)
 	editGroup:insert(passwordField)
 	self.passwordField = passwordField
 	
+	local usernameField = widget.newEditField
+    {
+        slideGroup = editGroup,
+        x = display.contentCenterX,
+        y = 180,
+        width = display.contentWidth - 40,
+        label = "Username : ",
+        labelWidth = myLabelWidth,
+        labelColor = {0,0,0,1},
+        hint = "Username",
+        maxChars = 0,
+        editFont = myapp.font,
+        editFontSize = 18,
+        editFontColor = {0,0,0,1},
+        listener = textListener,
+        submitOnClear = true,
+        onSubmit = onSubmit,
+        frame = 
+          { 
+            cornerRadius = 5,
+            strokeWidth = 2,
+            strokeColor = {.2,.2,.2,1},
+            fillColor =   {255,255,255,1},
+          },
+        required = true,
+        errorFrame = {
+           cornerRadius = 5
+        },
+        buttons = { 
+            {kind = "clear", defaultFile = "images/clear.png"}
+        },
+        
+    }
+	
+	editGroup:insert(usernameField)
+	self.usernameField = usernameField
+	
+	local function onUpdate(event)
+		if not event.error then
+			storyboard.gotoScene("mp-menu-a", "fade" , 400)
+		else
+			native.showAlert("Update Error", event.error)
+		end
+	end
+	
 	local function onRun(event)
 		if not event.error then
-			for key,value in pairs(event.result) do
-				print (key, value)
+			if (event.result.uniqueUsername == true) then
+				coronium:updateUser({username = self.usernameField:getValue()}, onUpdate)
+			else
+				native.showAlert("Username Error", "That username is taken.  Please choose another")
 			end
 		else
 			native.showAlert("Error", event.error)
@@ -159,9 +206,7 @@ function scene:createScene(event)
 	
 	local function onLoginUser(event)
 		if not event.error then
-			--local myUsername = "Perpetuus"
-			--coronium:run("checkusernames", {username = myUsername}, onRun);
-			storyboard.gotoScene("mp-menu-a", "fade", 400);
+			coronium:run("checkusernames", {username = self.usernameField:getValue()}, onRun);
 		else
 			native.showAlert("Error", event.error)
 		end
@@ -181,16 +226,21 @@ function scene:createScene(event)
 		end
 	end
 	
-	local function onLogin()
-		local myPassword = self.passwordField:getValue()
-		local myEmail = self.emailField:getValue()
-		--myPassword = "test"
-		--myEmail = "eric.meuse@gmail.com"
-		local dbStuff = [[DELETE FROM userinfo]];
-		db:exec(dbStuff);
-		dbStuff = [[INSERT INTO userinfo VALUES (NULL, ']] .. myEmail .. [[', ']] .. myPassword .. [[');]];
-		db:exec(dbStuff);
-		coronium:loginUser(myEmail, myPassword, onLoginUser)
+	local function onLogin(event)
+		if not event.error then
+			local myPassword = self.passwordField:getValue()
+			local myEmail = self.emailField:getValue()
+			--myPassword = "test"
+			--myEmail = "eric.meuse@gmail.com"
+			local dbStuff = [[DELETE FROM userinfo]];
+			db:exec(dbStuff);
+			dbStuff = [[INSERT INTO userinfo VALUES (NULL, ']] .. myEmail .. [[', ']] .. myPassword .. [[');]];
+			db:exec(dbStuff);
+			--print ("login user")
+			coronium:loginUser(myEmail, myPassword, onLoginUser)
+		else
+			native.showAlert("Error", event.error)
+		end
 	end
 	
 	local function onSignUp()
@@ -198,20 +248,24 @@ function scene:createScene(event)
 		local myEmail = self.emailField:getValue()
 		--myPassword = "test"
 		--myEmail = "eric.meuse@gmail.com"
-		coronium:registerUser( { email = myEmail, password = myPassword}, onRegisterUser )
+		coronium:registerUser( { email = myEmail, password = myPassword}, onLogin)
 	end
 	
 	local function onForgotPassword()
 		storyboard.gotoScene("forgotpassword", "fade", 400);
 	end
 	
-	btnLogin = widget.newButton
+	local function goToLogIn(event)
+		storyboard.gotoScene("login", "fade", 400);
+	end
+	
+	btnSignUp = widget.newButton
 	{
 		left = 0,
 		top = 0;
 		width = 140,
 		height = 45,
-        onRelease = onLogin,
+        onRelease = onSignUp,
         font = myapp.font,
         fontSize = 18,
         label = "Submit",
@@ -222,47 +276,22 @@ function scene:createScene(event)
 		},
 		defaultFile = "images/mainMenuItem.png",
 		overFile = "images/mainMenuItemOver.png",
-		id = "btnLogin",
+		id = "btnSignUp",
 	}
-	btnLogin.x = display.contentWidth / 2
-	btnLogin.y = passwordField.y + 40
-	editGroup:insert(btnLogin)
+	btnSignUp.x = display.contentWidth / 2
+	btnSignUp.y = usernameField.y + 40
+	editGroup:insert(btnSignUp)
 	
-	btnForgotPassword = widget.newButton
+	btnLogIn = widget.newButton
 	{
 		left = 0,
 		top = 0,
 		width = 90,
 		height = 30,
-		onRelease = onForgotPassword,
+		onRelease = goToLogIn,
 		font = myapp.font,
         fontSize = 14,
-		label = "FORGOT PASSWORD?",
-		labelColor = 
-		{
-			default = {255,0,0,255},
-			over = {255,0,0,255},
-		},
-		id="btnForgotPassword",
-	}
-	btnForgotPassword.x = display.contentWidth / 2
-	btnForgotPassword.y = display.contentHeight - 27
-	editGroup:insert(btnForgotPassword)
-	
-	local function goToSignUp(event)
-		storyboard.gotoScene("signup", "fade", 400);
-	end
-		
-	btnSignUp = widget.newButton
-	{
-		left = 0,
-		top = 0,
-		width = 90,
-		height = 30,
-		onRelease = goToSignUp,
-		font = myapp.font,
-        fontSize = 14,
-		label = "SIGN UP",
+		label = "LOG IN",
 		labelColor = 
 		{
 			default = {255,0,0,255},
@@ -270,15 +299,15 @@ function scene:createScene(event)
 		},
 		id="btnLogIn",
 	}
-	local accountSignIn = display.newText("Need to register an account?", 0, 0, myapp.font, 14);
+	local accountSignIn = display.newText("Already have an account?", 0, 0, myapp.font, 14);
 	
-	btnSignUp.x = (display.contentWidth / 2) + (btnSignUp.width) - 10
-	btnSignUp.y = btnLogin.y + 57
-	editGroup:insert(btnSignUp)
+	btnLogIn.x = (display.contentWidth / 2) + (btnLogIn.width) - 10
+	btnLogIn.y = btnSignUp.y + 47
+	editGroup:insert(btnLogIn)
 	
 	
-	accountSignIn.x = (display.contentWidth / 2) - (accountSignIn.width / 2) + (btnSignUp.width / 2)
-	accountSignIn.y = btnLogin.y + 57
+	accountSignIn.x = (display.contentWidth / 2) - (accountSignIn.width / 2) + (btnLogIn.width / 2)
+	accountSignIn.y = btnSignUp.y + 47
 	editGroup:insert(accountSignIn)	
 	
 end
